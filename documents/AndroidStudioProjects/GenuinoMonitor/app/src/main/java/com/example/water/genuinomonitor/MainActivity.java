@@ -21,9 +21,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.View;
-import android.widget.ExpandableListView;
-import android.widget.SimpleExpandableListAdapter;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,35 +39,47 @@ public class MainActivity extends Activity {
     private BluetoothLeScanner mBLEScanner;
     private BLEService mBLEService;
     private BluetoothGattCharacteristic mNotifyCharacteristic;
+    private BluetoothGattCharacteristic mGyroXCharacteristic;
+    private BluetoothGattCharacteristic mGyroYCharacteristic;
+    private BluetoothGattCharacteristic mGyroZCharacteristic;
+    private BluetoothGattCharacteristic mAcclXCharacteristic;
+    private BluetoothGattCharacteristic mAcclYCharacteristic;
+    private BluetoothGattCharacteristic mAcclZCharacteristic;
     private ScanSettings settings;
     private List<ScanFilter> filters;
-
-    private ExpandableListView mGattServicesList;
+    private Genuino101 mGenuino;
 
     private boolean mScanning;
-    private boolean mConnected;
+    private boolean mfindGenuino;
     private TextView mDeviceName;
     private TextView mDeviceAddress;
     private TextView mDeviceStatus;
-    private TextView mDataField;
+    private TextView mGyroGx;
+    private TextView mGyroGy;
+    private TextView mGyroGz;
+    private TextView mAcclAx;
+    private TextView mAcclAy;
+    private TextView mAcclAz;
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+    private final String DEFAULT_BLE_ADDRESS = "98:4F:EE:10:7F:E5";
 
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 10000;
     private String mServiceAddress;
 
-    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
-            new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+    private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mGenuino = new Genuino101();
         mHandler = new Handler();
+        mBLEService = new BLEService();
 
         BackThread thread = new BackThread();
         thread.setDaemon(true);
@@ -105,9 +116,12 @@ public class MainActivity extends Activity {
         mDeviceName = (TextView) findViewById(R.id.deviceName);
         mDeviceAddress  = (TextView) findViewById(R.id.deviceAddress);
         mDeviceStatus = (TextView) findViewById(R.id.deviceStatus);
-        mDataField  = (TextView) findViewById(R.id.dataField);
-        mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
-        mGattServicesList.setOnChildClickListener(servicesListClickListner);
+        mGyroGx  = (TextView) findViewById(R.id.gyroGx);
+        mGyroGy  = (TextView) findViewById(R.id.gyroGy);
+        mGyroGz  = (TextView) findViewById(R.id.gyroGz);
+        mAcclAx  = (TextView) findViewById(R.id.acclAx);
+        mAcclAy  = (TextView) findViewById(R.id.acclAy);
+        mAcclAz  = (TextView) findViewById(R.id.acclAz);
     }
 
     @Override
@@ -118,21 +132,60 @@ public class MainActivity extends Activity {
         bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
-    public void mOnClick(View v) {
-        switch (v.getId()) {
-            case R.id.buttonScanStart:
-                scanLeDevice(true);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if (!mScanning) {
+            menu.findItem(R.id.menu_stop).setVisible(false);
+            menu.findItem(R.id.menu_scan).setVisible(true);
+            menu.findItem(R.id.menu_connect).setVisible(false);
+            menu.findItem(R.id.menu_disconnect).setVisible(false);
+            menu.findItem(R.id.menu_refresh).setActionView(null);
+        } else if(!mfindGenuino) {
+            menu.findItem(R.id.menu_stop).setVisible(true);
+            menu.findItem(R.id.menu_scan).setVisible(false);
+            menu.findItem(R.id.menu_connect).setVisible(false);
+            menu.findItem(R.id.menu_disconnect).setVisible(false);
+            menu.findItem(R.id.menu_refresh).setActionView(null);
+        } else if(!mGenuino.getBLE().getConnectState()) {
+            menu.findItem(R.id.menu_stop).setVisible(true);
+            menu.findItem(R.id.menu_scan).setVisible(false);
+            menu.findItem(R.id.menu_connect).setVisible(true);
+            menu.findItem(R.id.menu_disconnect).setVisible(false);
+            menu.findItem(R.id.menu_refresh).setActionView(null);
+        } else {
+            menu.findItem(R.id.menu_stop).setVisible(true);
+            menu.findItem(R.id.menu_scan).setVisible(false);
+            menu.findItem(R.id.menu_connect).setVisible(false);
+            menu.findItem(R.id.menu_disconnect).setVisible(true);
+            menu.findItem(R.id.menu_refresh).setActionView(R.layout.actionbar_indeterminate_progress);
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_scan:
+                scanBLEDevice(true);
                 break;
-            case R.id.buttonScanStop:
-                scanLeDevice(false);
+            case R.id.menu_stop:
+                scanBLEDevice(false);
                 break;
-            case R.id.buttonConnect:
+            case R.id.menu_connect:
                 mBLEService.connect(mServiceAddress);
                 break;
-            case R.id.buttonDisconnect:
+            case R.id.menu_disconnect:
                 mBLEService.disconnect();
                 break;
         }
+        return true;
     }
 
     @Override
@@ -153,20 +206,20 @@ public class MainActivity extends Activity {
                 startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
             }
         }
-        scanLeDevice(true);
+        scanBLEDevice(true);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        scanLeDevice(false);
+        scanBLEDevice(false);
     }
 
-    private void scanLeDevice(final boolean enable) {
+    private void scanBLEDevice(final boolean enable) {
 
         settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
         filters = new ArrayList<ScanFilter>();
-        ScanFilter filter = new ScanFilter.Builder().setDeviceAddress("98:4F:EE:10:7F:E5").build();
+        ScanFilter filter = new ScanFilter.Builder().setDeviceAddress(DEFAULT_BLE_ADDRESS).build();
         filters.add(filter);
 
         if (enable) {
@@ -175,15 +228,18 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     mScanning = false;
+                    mfindGenuino = false;
                     mBLEScanner.stopScan(mScanCallback);
                 }
             }, SCAN_PERIOD);
             mScanning = true;
-//            mBLEScanner.startScan(mScanCallback);
             mBLEScanner.startScan(filters, settings, mScanCallback);
+            updateConnectionState(R.string.ble_scanning);
         } else {
             mScanning = false;
+            mfindGenuino = false;
             mBLEScanner.stopScan(mScanCallback);
+            updateConnectionState(R.string.ble_stopscan);
         }
     }
 
@@ -208,16 +264,19 @@ public class MainActivity extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    mDeviceName.setText(result.getDevice().getName());
-                    mServiceAddress = result.getDevice().getAddress();
+                    mGenuino.getBLE().setName(result.getDevice().getName());
+                    mDeviceName.setText(mGenuino.getBLE().getName());
+                    mGenuino.getBLE().setAddress(result.getDevice().getAddress());
+                    mServiceAddress = mGenuino.getBLE().getAddress();
                     mDeviceAddress.setText(mServiceAddress);
+                    updateConnectionState(R.string.ble_scan_finish);
+                    mfindGenuino = true;
                 }
             });
         }
     };
 
     private ServiceConnection mServiceConnection = new ServiceConnection(){
-
 
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service){
@@ -245,35 +304,63 @@ public class MainActivity extends Activity {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-            String data = "";
             if (BLEService.ACTION_GATT_CONNECTED.equals(action)) {
-                mConnected = true;
-                updateConnectionState(R.string.connected);
+                mGenuino.getBLE().setConnect();
+                updateConnectionState(R.string.ble_connected);
             } else if (BLEService.ACTION_GATT_DISCONNECTED.equals(action)) {
-                mConnected = false;
-                updateConnectionState(R.string.disconnected);
+                mGenuino.getBLE().setDisconnect();
+                updateConnectionState(R.string.ble_disconnected);
                 clearUI();
             } else if (BLEService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-                // Show all the supported services and characteristics on the user interface.
-                displayGattServices(mBLEService.getSupportedGattServices());
+                // Select Gyro services and characteristics on the user interface.
+                selectGyroGattServices(mBLEService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
-                data += "gx : " + intent.getStringExtra(BLEService.GYRO_X_DATA) + ", ";
-                data += "gy : " + intent.getStringExtra(BLEService.GYRO_Y_DATA) + ", ";
-                data += "gz : " + intent.getStringExtra(BLEService.GYRO_Z_DATA);
-                displayData(data);
+                float gx = mGenuino.getGyroscope().getGx();
+                float gy = mGenuino.getGyroscope().getGy();
+                float gz = mGenuino.getGyroscope().getGz();
+                float ax = mGenuino.getAccelerometer().getAx();
+                float ay = mGenuino.getAccelerometer().getAy();
+                float az = mGenuino.getAccelerometer().getAz();
+                if(intent.getStringExtra(BLEService.GYRO_X_DATA) != null) {
+                    gx = Float.parseFloat(intent.getStringExtra(BLEService.GYRO_X_DATA));
+                }
+                if(intent.getStringExtra(BLEService.GYRO_Y_DATA) != null) {
+                    gy = Float.parseFloat(intent.getStringExtra(BLEService.GYRO_Y_DATA));
+                }
+                if(intent.getStringExtra(BLEService.GYRO_Z_DATA) != null) {
+                    gz = Float.parseFloat(intent.getStringExtra(BLEService.GYRO_Z_DATA));
+                }
+                if(intent.getStringExtra(BLEService.ACCL_X_DATA) != null) {
+                    ax = Float.parseFloat(intent.getStringExtra(BLEService.ACCL_X_DATA));
+                }
+                if(intent.getStringExtra(BLEService.ACCL_Y_DATA) != null) {
+                    ay = Float.parseFloat(intent.getStringExtra(BLEService.ACCL_Y_DATA));
+                }
+                if(intent.getStringExtra(BLEService.ACCL_Z_DATA) != null) {
+                    az = Float.parseFloat(intent.getStringExtra(BLEService.ACCL_Z_DATA));
+                }
+                mGenuino.getGyroscope().updateData(gx, gy, gz);
+                mGenuino.getAccelerometer().updateData(ax, ay, az);
+                displayData(mGenuino.getGyroscope().getData());
+                displayData(mGenuino.getAccelerometer().getData());
             }
         }
     };
 
     private void clearUI() {
-        mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
-        mDataField.setText(R.string.no_data);
+        mGyroGx.setText(R.string.no_data);
+        mGyroGy.setText(R.string.no_data);
+        mGyroGz.setText(R.string.no_data);
+        mAcclAx.setText(R.string.no_data);
+        mAcclAy.setText(R.string.no_data);
+        mAcclAz.setText(R.string.no_data);
     }
 
     private void updateConnectionState(final int resourceId) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
+                openOptionsMenu();
                 mDeviceStatus.setText(resourceId);
             }
         });
@@ -282,11 +369,11 @@ public class MainActivity extends Activity {
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
     // In this sample, we populate the data structure that is bound to the ExpandableListView
     // on the UI.
-    private void displayGattServices(List<BluetoothGattService> gattServices) {
+    private void selectGyroGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
         String uuid = null;
-        String unknownServiceString = getResources().getString(R.string.unknown_service);
-        String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
+        String unknownServiceString = getResources().getString(R.string.ble_unknown_service);
+        String unknownCharaString = getResources().getString(R.string.ble_unknown_characteristic);
         ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
         ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
                 = new ArrayList<ArrayList<HashMap<String, String>>>();
@@ -300,55 +387,78 @@ public class MainActivity extends Activity {
             currentServiceData.put(LIST_UUID, uuid);
             gattServiceData.add(currentServiceData);
 
-            ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
-                    new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics =
-                    gattService.getCharacteristics();
-            ArrayList<BluetoothGattCharacteristic> charas =
-                    new ArrayList<BluetoothGattCharacteristic>();
+            ArrayList<HashMap<String, String>> gattCharacteristicGroupData = new ArrayList<HashMap<String, String>>();
+            List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
+            ArrayList<BluetoothGattCharacteristic> charas = new ArrayList<BluetoothGattCharacteristic>();
 
             // Loops through available Characteristics.
             for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
                 charas.add(gattCharacteristic);
                 HashMap<String, String> currentCharaData = new HashMap<String, String>();
                 uuid = gattCharacteristic.getUuid().toString();
+                if(uuid.equals(BLEService.UUID_GYRO_X_MEASUREMENT.toString())) {
+                    mGyroXCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_GYRO_Y_MEASUREMENT.toString())) {
+                    mGyroYCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_GYRO_Z_MEASUREMENT.toString())) {
+                    mGyroZCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_ACCL_X_MEASUREMENT.toString())) {
+                    mAcclXCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_ACCL_Y_MEASUREMENT.toString())) {
+                    mAcclYCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_ACCL_Z_MEASUREMENT.toString())) {
+                    mAcclZCharacteristic = gattCharacteristic;
+                }
                 currentCharaData.put(LIST_NAME, gattAttributes.lookup(uuid, unknownCharaString));
                 currentCharaData.put(LIST_UUID, uuid);
                 gattCharacteristicGroupData.add(currentCharaData);
             }
+
             mGattCharacteristics.add(charas);
             gattCharacteristicData.add(gattCharacteristicGroupData);
-
-            SimpleExpandableListAdapter gattServiceAdapter = new SimpleExpandableListAdapter(
-                    this,
-                    gattServiceData,
-                    android.R.layout.simple_expandable_list_item_2,
-                    new String[] {LIST_NAME, LIST_UUID},
-                    new int[] { android.R.id.text1, android.R.id.text2 },
-                    gattCharacteristicData,
-                    android.R.layout.simple_expandable_list_item_2,
-                    new String[] {LIST_NAME, LIST_UUID},
-                    new int[] { android.R.id.text1, android.R.id.text2 }
-            );
-            mGattServicesList.setAdapter(gattServiceAdapter);
         }
     }
 
-    private void displayData(String data) {
-        if (data != null) {
-            mDataField.setText(data);
-        }
+    private void displayData(Gyroscope gyro) {
+        mGyroGx.setText(String.valueOf(gyro.getGx()));
+        mGyroGy.setText(String.valueOf(gyro.getGy()));
+        mGyroGz.setText(String.valueOf(gyro.getGz()));
     }
 
-    // If a given GATT characteristic is selected, check for supported features.  This sample
-    // demonstrates 'Read' and 'Notify' features.  See
-    // http://d.android.com/reference/android/bluetooth/BluetoothGatt.html for the complete
-    // list of supported characteristic features.
-    private final ExpandableListView.OnChildClickListener servicesListClickListner = new ExpandableListView.OnChildClickListener() {
-        @Override
-        public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
-            if (mGattCharacteristics != null) {
-                final BluetoothGattCharacteristic characteristic = mGattCharacteristics.get(groupPosition).get(childPosition);
+    private void displayData(Accelerometer accl) {
+        mAcclAx.setText(String.valueOf(accl.getAx()));
+        mAcclAy.setText(String.valueOf(accl.getAy()));
+        mAcclAz.setText(String.valueOf(accl.getAz()));
+    }
+
+    private static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(BLEService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(BLEService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(BLEService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(BLEService.ACTION_DATA_AVAILABLE);
+        return intentFilter;
+    }
+
+    class BackThread extends Thread {
+        public void run() {
+            while(true) {
+                updateData(mGyroXCharacteristic);
+                updateData(mGyroYCharacteristic);
+                updateData(mGyroZCharacteristic);
+                updateData(mAcclXCharacteristic);
+                updateData(mAcclYCharacteristic);
+                updateData(mAcclZCharacteristic);
+            }
+        }
+
+        void updateData(BluetoothGattCharacteristic characteristic) {
+            if (characteristic != null) {
                 final int charaProp = characteristic.getProperties();
 
                 if ((charaProp | BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
@@ -364,25 +474,6 @@ public class MainActivity extends Activity {
                     mNotifyCharacteristic = characteristic;
                     mBLEService.setCharacteristicNotification(characteristic, true);
                 }
-                return true;
-            }
-            return false;
-        }
-    };
-
-    private static IntentFilter makeGattUpdateIntentFilter() {
-        final IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(BLEService.ACTION_GATT_CONNECTED);
-        intentFilter.addAction(BLEService.ACTION_GATT_DISCONNECTED);
-        intentFilter.addAction(BLEService.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BLEService.ACTION_DATA_AVAILABLE);
-        return intentFilter;
-    }
-
-    class BackThread extends Thread {
-        public void run() {
-            while(true) {
-
             }
         }
     }

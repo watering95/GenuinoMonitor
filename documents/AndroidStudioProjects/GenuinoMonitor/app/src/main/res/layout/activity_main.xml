@@ -12,7 +12,21 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Device Name : " />
+            android:text="■ Status : " />
+        <TextView
+            android:id="@+id/deviceStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="■ Device Name : " />
         <TextView
             android:id="@+id/deviceName"
             android:layout_width="wrap_content"
@@ -25,7 +39,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Device Address : " />
+            android:text="■ Device Address : " />
 
         <TextView
             android:id="@+id/deviceAddress"
@@ -35,71 +49,106 @@
     </LinearLayout>
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <Button
-            android:id="@+id/buttonScanStart"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="mOnClick"
-            android:text="Scan" />
-
-        <Button
-            android:id="@+id/buttonScanStop"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="mOnClick"
-            android:text="Stop" />
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <Button
-            android:id="@+id/buttonConnect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="mOnClick"
-            android:text="Connect" />
-
-        <Button
-            android:id="@+id/buttonDisconnect"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="mOnClick"
-            android:text="Disconnect" />
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Status : " />
-
-        <TextView
-            android:id="@+id/deviceStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="TextView" />
-    </LinearLayout>
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Data : " />
-
-        <TextView
-            android:id="@+id/dataField"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="TextView"
-         />
-    </LinearLayout>
-
-    <ExpandableListView android:id="@+id/gatt_services_list"
-        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        tools:layout_editor_absoluteY="0dp"
-        tools:layout_editor_absoluteX="0dp" />
+        android:layout_marginTop="10dp"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="■ Gyroscope" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="gX : " />
+            <TextView
+                android:id="@+id/gyroGx"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="gY : " />
+            <TextView
+                android:id="@+id/gyroGy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="gZ : " />
+            <TextView
+                android:id="@+id/gyroGz"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data" />
+        </LinearLayout>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:orientation="vertical">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="■ Accelerometer" />
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="aX : " />
+            <TextView
+                android:id="@+id/acclAx"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="aY : " />
+            <TextView
+                android:id="@+id/acclAy"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="20dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="aZ : " />
+            <TextView
+                android:id="@+id/acclAz"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No Data" />
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

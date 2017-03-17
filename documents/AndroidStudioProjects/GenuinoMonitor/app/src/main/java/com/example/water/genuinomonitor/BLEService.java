@@ -6,7 +6,6 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
@@ -16,6 +15,8 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
 import java.util.UUID;
 
@@ -54,6 +55,12 @@ public class BLEService extends Service {
             "com.example.bluetooth.le.GYRO_Y_DATA";
     public final static String GYRO_Z_DATA =
             "com.example.bluetooth.le.GYRO_Z_DATA";
+    public final static String ACCL_X_DATA =
+            "com.example.bluetooth.le.ACCL_X_DATA";
+    public final static String ACCL_Y_DATA =
+            "com.example.bluetooth.le.ACCL_Y_DATA";
+    public final static String ACCL_Z_DATA =
+            "com.example.bluetooth.le.ACCL_Z_DATA";
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
 
@@ -63,6 +70,12 @@ public class BLEService extends Service {
             UUID.fromString(gattAttributes.GYRO_Y_MEASUREMENT);
     public final static UUID UUID_GYRO_Z_MEASUREMENT =
             UUID.fromString(gattAttributes.GYRO_Z_MEASUREMENT);
+    public final static UUID UUID_ACCL_X_MEASUREMENT =
+            UUID.fromString(gattAttributes.ACCL_X_MEASUREMENT);
+    public final static UUID UUID_ACCL_Y_MEASUREMENT =
+            UUID.fromString(gattAttributes.ACCL_Y_MEASUREMENT);
+    public final static UUID UUID_ACCL_Z_MEASUREMENT =
+            UUID.fromString(gattAttributes.ACCL_Z_MEASUREMENT);
 
     public class LocalBinder extends Binder {
         BLEService getService() {
@@ -234,19 +247,22 @@ public class BLEService extends Service {
         // carried out as per profile specifications:
         // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
         if (UUID_GYRO_X_MEASUREMENT.equals(characteristic.getUuid())) {
-            format = BluetoothGattCharacteristic.FORMAT_FLOAT;
-            float gyroX = characteristic.getFloatValue(format, 0);
-            intent.putExtra(GYRO_X_DATA, String.valueOf(gyroX));
+            intent.putExtra(GYRO_X_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if(UUID_GYRO_Y_MEASUREMENT.equals(characteristic.getUuid())) {
-            format = BluetoothGattCharacteristic.FORMAT_FLOAT;
-            float gyroY = characteristic.getFloatValue(format, 0);
-            intent.putExtra(GYRO_Y_DATA, String.valueOf(gyroY));
+            intent.putExtra(GYRO_Y_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if(UUID_GYRO_Z_MEASUREMENT.equals(characteristic.getUuid())) {
-            format = BluetoothGattCharacteristic.FORMAT_FLOAT;
-            float gyroZ = characteristic.getFloatValue(format, 0);
-            intent.putExtra(GYRO_Z_DATA, String.valueOf(gyroZ));
+            intent.putExtra(GYRO_Z_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if (UUID_ACCL_X_MEASUREMENT.equals(characteristic.getUuid())) {
+            intent.putExtra(ACCL_X_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if(UUID_ACCL_Y_MEASUREMENT.equals(characteristic.getUuid())) {
+            intent.putExtra(ACCL_Y_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if(UUID_ACCL_Z_MEASUREMENT.equals(characteristic.getUuid())) {
+            intent.putExtra(ACCL_Z_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else {
             // For all other profiles, writes the data formatted in HEX.
@@ -259,6 +275,12 @@ public class BLEService extends Service {
             }
         }
         sendBroadcast(intent);
+    }
+
+    public static float changeByteOrder(byte[] v, ByteOrder order) {
+        ByteBuffer b = ByteBuffer.allocate(4);
+        b.put(v).flip();
+        return b.order(order).getFloat();
     }
 
     /**
