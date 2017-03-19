@@ -61,6 +61,12 @@ public class BLEService extends Service {
             "com.example.bluetooth.le.ACCL_Y_DATA";
     public final static String ACCL_Z_DATA =
             "com.example.bluetooth.le.ACCL_Z_DATA";
+    public final static String POS_X_DATA =
+            "com.example.bluetooth.le.POS_X_DATA";
+    public final static String POS_Y_DATA =
+            "com.example.bluetooth.le.POS_Y_DATA";
+    public final static String POS_Z_DATA =
+            "com.example.bluetooth.le.POS_Z_DATA";
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
 
@@ -76,6 +82,12 @@ public class BLEService extends Service {
             UUID.fromString(gattAttributes.ACCL_Y_MEASUREMENT);
     public final static UUID UUID_ACCL_Z_MEASUREMENT =
             UUID.fromString(gattAttributes.ACCL_Z_MEASUREMENT);
+    public final static UUID UUID_POS_X_CALCULATION =
+            UUID.fromString(gattAttributes.POS_X_CALCULATION);
+    public final static UUID UUID_POS_Y_CALCULATION =
+            UUID.fromString(gattAttributes.POS_Y_CALCULATION);
+    public final static UUID UUID_POS_Z_CALCULATION =
+            UUID.fromString(gattAttributes.POS_Z_CALCULATION);
 
     public class LocalBinder extends Binder {
         BLEService getService() {
@@ -247,22 +259,31 @@ public class BLEService extends Service {
         // carried out as per profile specifications:
         // http://developer.bluetooth.org/gatt/characteristics/Pages/CharacteristicViewer.aspx?u=org.bluetooth.characteristic.heart_rate_measurement.xml
         if (UUID_GYRO_X_MEASUREMENT.equals(characteristic.getUuid())) {
-            intent.putExtra(GYRO_X_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+            intent.putExtra(GYRO_X_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if(UUID_GYRO_Y_MEASUREMENT.equals(characteristic.getUuid())) {
-            intent.putExtra(GYRO_Y_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+            intent.putExtra(GYRO_Y_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if(UUID_GYRO_Z_MEASUREMENT.equals(characteristic.getUuid())) {
-            intent.putExtra(GYRO_Z_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+            intent.putExtra(GYRO_Z_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if (UUID_ACCL_X_MEASUREMENT.equals(characteristic.getUuid())) {
-            intent.putExtra(ACCL_X_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+            intent.putExtra(ACCL_X_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if(UUID_ACCL_Y_MEASUREMENT.equals(characteristic.getUuid())) {
-            intent.putExtra(ACCL_Y_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+            intent.putExtra(ACCL_Y_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else if(UUID_ACCL_Z_MEASUREMENT.equals(characteristic.getUuid())) {
-            intent.putExtra(ACCL_Z_DATA, String.valueOf(changeByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+            intent.putExtra(ACCL_Z_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if (UUID_POS_X_CALCULATION.equals(characteristic.getUuid())) {
+            intent.putExtra(POS_X_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if(UUID_POS_Y_CALCULATION.equals(characteristic.getUuid())) {
+            intent.putExtra(POS_Y_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if(UUID_POS_Z_CALCULATION.equals(characteristic.getUuid())) {
+            intent.putExtra(POS_Z_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else {
             // For all other profiles, writes the data formatted in HEX.
@@ -277,10 +298,16 @@ public class BLEService extends Service {
         sendBroadcast(intent);
     }
 
-    public static float changeByteOrder(byte[] v, ByteOrder order) {
+    public static float changeFloatByteOrder(byte[] v, ByteOrder order) {
         ByteBuffer b = ByteBuffer.allocate(4);
         b.put(v).flip();
         return b.order(order).getFloat();
+    }
+
+    public static int changeIntByteOrder(byte[] v, ByteOrder order) {
+        ByteBuffer b = ByteBuffer.allocate(4);
+        b.put(v).flip();
+        return b.order(order).getInt();
     }
 
     /**

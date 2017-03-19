@@ -45,11 +45,15 @@ public class MainActivity extends Activity {
     private BluetoothGattCharacteristic mAcclXCharacteristic;
     private BluetoothGattCharacteristic mAcclYCharacteristic;
     private BluetoothGattCharacteristic mAcclZCharacteristic;
+    private BluetoothGattCharacteristic mPosXCharacteristic;
+    private BluetoothGattCharacteristic mPosYCharacteristic;
+    private BluetoothGattCharacteristic mPosZCharacteristic;
     private ScanSettings settings;
     private List<ScanFilter> filters;
     private Genuino101 mGenuino;
 
     private boolean mScanning;
+    private boolean mScanned;
     private boolean mfindGenuino;
     private TextView mDeviceName;
     private TextView mDeviceAddress;
@@ -60,6 +64,9 @@ public class MainActivity extends Activity {
     private TextView mAcclAx;
     private TextView mAcclAy;
     private TextView mAcclAz;
+    private TextView mPosX;
+    private TextView mPosY;
+    private TextView mPosZ;
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
@@ -122,6 +129,9 @@ public class MainActivity extends Activity {
         mAcclAx  = (TextView) findViewById(R.id.acclAx);
         mAcclAy  = (TextView) findViewById(R.id.acclAy);
         mAcclAz  = (TextView) findViewById(R.id.acclAz);
+        mPosX = (TextView) findViewById(R.id.posX);
+        mPosY = (TextView) findViewById(R.id.posY);
+        mPosZ = (TextView) findViewById(R.id.posZ);
     }
 
     @Override
@@ -141,30 +151,34 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        if (!mScanning) {
-            menu.findItem(R.id.menu_stop).setVisible(false);
-            menu.findItem(R.id.menu_scan).setVisible(true);
-            menu.findItem(R.id.menu_connect).setVisible(false);
-            menu.findItem(R.id.menu_disconnect).setVisible(false);
-            menu.findItem(R.id.menu_refresh).setActionView(null);
-        } else if(!mfindGenuino) {
-            menu.findItem(R.id.menu_stop).setVisible(true);
-            menu.findItem(R.id.menu_scan).setVisible(false);
-            menu.findItem(R.id.menu_connect).setVisible(false);
-            menu.findItem(R.id.menu_disconnect).setVisible(false);
-            menu.findItem(R.id.menu_refresh).setActionView(null);
-        } else if(!mGenuino.getBLE().getConnectState()) {
-            menu.findItem(R.id.menu_stop).setVisible(true);
-            menu.findItem(R.id.menu_scan).setVisible(false);
-            menu.findItem(R.id.menu_connect).setVisible(true);
-            menu.findItem(R.id.menu_disconnect).setVisible(false);
-            menu.findItem(R.id.menu_refresh).setActionView(null);
-        } else {
-            menu.findItem(R.id.menu_stop).setVisible(true);
+        if(mGenuino.getBLE().getConnectState()) {
             menu.findItem(R.id.menu_scan).setVisible(false);
             menu.findItem(R.id.menu_connect).setVisible(false);
             menu.findItem(R.id.menu_disconnect).setVisible(true);
-            menu.findItem(R.id.menu_refresh).setActionView(R.layout.actionbar_indeterminate_progress);
+            menu.findItem(R.id.menu_stop).setVisible(true);
+            menu.findItem(R.id.menu_refresh).setActionView(null);
+        } else {
+            if(mfindGenuino) {
+                menu.findItem(R.id.menu_scan).setVisible(false);
+                menu.findItem(R.id.menu_connect).setVisible(true);
+                menu.findItem(R.id.menu_disconnect).setVisible(false);
+                menu.findItem(R.id.menu_stop).setVisible(true);
+                menu.findItem(R.id.menu_refresh).setActionView(null);
+            } else {
+                if (mScanning) {
+                    menu.findItem(R.id.menu_scan).setVisible(false);
+                    menu.findItem(R.id.menu_connect).setVisible(false);
+                    menu.findItem(R.id.menu_disconnect).setVisible(false);
+                    menu.findItem(R.id.menu_stop).setVisible(true);
+                    menu.findItem(R.id.menu_refresh).setActionView(R.layout.actionbar_indeterminate_progress);
+                } else {
+                    menu.findItem(R.id.menu_scan).setVisible(true);
+                    menu.findItem(R.id.menu_connect).setVisible(false);
+                    menu.findItem(R.id.menu_disconnect).setVisible(false);
+                    menu.findItem(R.id.menu_stop).setVisible(false);
+                    menu.findItem(R.id.menu_refresh).setActionView(null);
+                }
+            }
         }
         return super.onPrepareOptionsMenu(menu);
     }
@@ -176,6 +190,7 @@ public class MainActivity extends Activity {
                 scanBLEDevice(true);
                 break;
             case R.id.menu_stop:
+                mBLEService.disconnect();
                 scanBLEDevice(false);
                 break;
             case R.id.menu_connect:
@@ -228,18 +243,22 @@ public class MainActivity extends Activity {
                 @Override
                 public void run() {
                     mScanning = false;
-                    mfindGenuino = false;
                     mBLEScanner.stopScan(mScanCallback);
                 }
             }, SCAN_PERIOD);
             mScanning = true;
             mBLEScanner.startScan(filters, settings, mScanCallback);
             updateConnectionState(R.string.ble_scanning);
+            invalidateOptionsMenu();
         } else {
             mScanning = false;
             mfindGenuino = false;
             mBLEScanner.stopScan(mScanCallback);
             updateConnectionState(R.string.ble_stopscan);
+            mDeviceName.setText("No Device");
+            mDeviceAddress.setText("No Device");
+            mServiceAddress = null;
+            invalidateOptionsMenu();
         }
     }
 
@@ -264,13 +283,16 @@ public class MainActivity extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    mGenuino.getBLE().setName(result.getDevice().getName());
-                    mDeviceName.setText(mGenuino.getBLE().getName());
-                    mGenuino.getBLE().setAddress(result.getDevice().getAddress());
-                    mServiceAddress = mGenuino.getBLE().getAddress();
-                    mDeviceAddress.setText(mServiceAddress);
-                    updateConnectionState(R.string.ble_scan_finish);
-                    mfindGenuino = true;
+                    if(!mfindGenuino) {
+                        mGenuino.getBLE().setName(result.getDevice().getName());
+                        mDeviceName.setText(mGenuino.getBLE().getName());
+                        mGenuino.getBLE().setAddress(result.getDevice().getAddress());
+                        mServiceAddress = mGenuino.getBLE().getAddress();
+                        mDeviceAddress.setText(mServiceAddress);
+                        updateConnectionState(R.string.ble_scan_finish);
+                        mfindGenuino = true;
+                        invalidateOptionsMenu();
+                    }
                 }
             });
         }
@@ -307,10 +329,12 @@ public class MainActivity extends Activity {
             if (BLEService.ACTION_GATT_CONNECTED.equals(action)) {
                 mGenuino.getBLE().setConnect();
                 updateConnectionState(R.string.ble_connected);
+                invalidateOptionsMenu();
             } else if (BLEService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 mGenuino.getBLE().setDisconnect();
                 updateConnectionState(R.string.ble_disconnected);
                 clearUI();
+                invalidateOptionsMenu();
             } else if (BLEService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
                 // Select Gyro services and characteristics on the user interface.
                 selectGyroGattServices(mBLEService.getSupportedGattServices());
@@ -321,6 +345,10 @@ public class MainActivity extends Activity {
                 float ax = mGenuino.getAccelerometer().getAx();
                 float ay = mGenuino.getAccelerometer().getAy();
                 float az = mGenuino.getAccelerometer().getAz();
+                float px = mGenuino.getPositionX();
+                float py = mGenuino.getPositionY();
+                float pz = mGenuino.getPositionZ();
+
                 if(intent.getStringExtra(BLEService.GYRO_X_DATA) != null) {
                     gx = Float.parseFloat(intent.getStringExtra(BLEService.GYRO_X_DATA));
                 }
@@ -339,10 +367,23 @@ public class MainActivity extends Activity {
                 if(intent.getStringExtra(BLEService.ACCL_Z_DATA) != null) {
                     az = Float.parseFloat(intent.getStringExtra(BLEService.ACCL_Z_DATA));
                 }
+                if(intent.getStringExtra(BLEService.POS_X_DATA) != null) {
+                    px = Float.parseFloat(intent.getStringExtra(BLEService.POS_X_DATA));
+                }
+                if(intent.getStringExtra(BLEService.POS_Y_DATA) != null) {
+                    py = Float.parseFloat(intent.getStringExtra(BLEService.POS_Y_DATA));
+                }
+                if(intent.getStringExtra(BLEService.POS_Z_DATA) != null) {
+                    pz = Float.parseFloat(intent.getStringExtra(BLEService.POS_Z_DATA));
+                }
                 mGenuino.getGyroscope().updateData(gx, gy, gz);
                 mGenuino.getAccelerometer().updateData(ax, ay, az);
+                mGenuino.setPotision(px, py, pz);
                 displayData(mGenuino.getGyroscope().getData());
                 displayData(mGenuino.getAccelerometer().getData());
+                mPosX.setText(String.valueOf(mGenuino.getPositionX()));
+                mPosY.setText(String.valueOf(mGenuino.getPositionY()));
+                mPosZ.setText(String.valueOf(mGenuino.getPositionZ()));
             }
         }
     };
@@ -360,7 +401,6 @@ public class MainActivity extends Activity {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                openOptionsMenu();
                 mDeviceStatus.setText(resourceId);
             }
         });
@@ -414,6 +454,15 @@ public class MainActivity extends Activity {
                 else if(uuid.equals(BLEService.UUID_ACCL_Z_MEASUREMENT.toString())) {
                     mAcclZCharacteristic = gattCharacteristic;
                 }
+                else if(uuid.equals(BLEService.UUID_POS_X_CALCULATION.toString())) {
+                    mPosXCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_POS_Y_CALCULATION.toString())) {
+                    mPosYCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_POS_Z_CALCULATION.toString())) {
+                    mPosZCharacteristic = gattCharacteristic;
+                }
                 currentCharaData.put(LIST_NAME, gattAttributes.lookup(uuid, unknownCharaString));
                 currentCharaData.put(LIST_UUID, uuid);
                 gattCharacteristicGroupData.add(currentCharaData);
@@ -454,6 +503,9 @@ public class MainActivity extends Activity {
                 updateData(mAcclXCharacteristic);
                 updateData(mAcclYCharacteristic);
                 updateData(mAcclZCharacteristic);
+                updateData(mPosXCharacteristic);
+                updateData(mPosYCharacteristic);
+                updateData(mPosZCharacteristic);
             }
         }
 

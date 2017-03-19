@@ -8,7 +8,7 @@ public class Genuino101 {
     private BLE mBLE = new BLE();
     private Gyroscope mGyro = new Gyroscope();
     private Accelerometer mAccelerometer = new Accelerometer();
-    private int positionX, positionY, positionZ;
+    private float positionX, positionY, positionZ;
 
     public Genuino101() {
         initPosition();
@@ -30,18 +30,18 @@ public class Genuino101 {
         setPotision(0,0,0);
     }
 
-    public void setPotision(int x, int y, int z) {
+    public void setPotision(float x, float y, float z) {
         positionX = x;
         positionY = y;
         positionZ = z;
     }
-    public int getPositionX() {
+    public float getPositionX() {
         return positionX;
     }
-    public int getPositionY() {
+    public float getPositionY() {
         return positionY;
     }
-    public int getPositionZ() {
+    public float getPositionZ() {
         return positionZ;
     }
 }

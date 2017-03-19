@@ -8,16 +8,16 @@
         android:title="@string/menu_scan"
         android:orderInCategory="100"
         android:showAsAction="ifRoom|withText"/>
-    <item android:id="@+id/menu_stop"
-        android:title="@string/menu_stop"
-        android:orderInCategory="101"
-        android:showAsAction="ifRoom|withText"/>
     <item android:id="@+id/menu_connect"
         android:title="@string/menu_connect"
         android:orderInCategory="100"
         android:showAsAction="ifRoom|withText"/>
     <item android:id="@+id/menu_disconnect"
         android:title="@string/menu_disconnect"
+        android:orderInCategory="101"
+        android:showAsAction="ifRoom|withText"/>
+    <item android:id="@+id/menu_stop"
+        android:title="@string/menu_stop"
         android:orderInCategory="101"
         android:showAsAction="ifRoom|withText"/>
 </menu>

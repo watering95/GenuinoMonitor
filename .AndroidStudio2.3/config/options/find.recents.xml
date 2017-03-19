@@ -3,6 +3,8 @@
     <findStrings>
       <find>mServiceAddress</find>
       <find>mGyroZCharacteristic</find>
+      <find>open</find>
+      <find>mfindGenuino</find>
     </findStrings>
   </component>
 </application>

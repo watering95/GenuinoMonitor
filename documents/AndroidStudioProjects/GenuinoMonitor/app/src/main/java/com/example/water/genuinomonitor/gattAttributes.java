@@ -14,6 +14,9 @@ public class gattAttributes {
     public static String ACCL_X_MEASUREMENT = "0000bbb4-0000-1000-8000-00805f9b34fb";
     public static String ACCL_Y_MEASUREMENT = "0000bbb5-0000-1000-8000-00805f9b34fb";
     public static String ACCL_Z_MEASUREMENT = "0000bbb6-0000-1000-8000-00805f9b34fb";
+    public static String POS_X_CALCULATION = "0000bbb7-0000-1000-8000-00805f9b34fb";
+    public static String POS_Y_CALCULATION = "0000bbb8-0000-1000-8000-00805f9b34fb";
+    public static String POS_Z_CALCULATION = "0000bbb9-0000-1000-8000-00805f9b34fb";
 
     static {
         // Sample Services.
@@ -25,6 +28,9 @@ public class gattAttributes {
         attributes.put(ACCL_X_MEASUREMENT, "Accelerometer X Measurement");
         attributes.put(ACCL_Y_MEASUREMENT, "Accelerometer Y Measurement");
         attributes.put(ACCL_Z_MEASUREMENT, "Accelerometer Z Measurement");
+        attributes.put(POS_X_CALCULATION, "Position X");
+        attributes.put(POS_Y_CALCULATION, "Position Y");
+        attributes.put(POS_Z_CALCULATION, "Position Z");
     }
 
     public static String lookup(String uuid, String defaultName) {
