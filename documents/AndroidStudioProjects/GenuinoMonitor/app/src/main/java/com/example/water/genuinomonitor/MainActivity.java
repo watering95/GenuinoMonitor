@@ -1,6 +1,8 @@
 package com.example.water.genuinomonitor;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
@@ -13,10 +15,12 @@ import android.bluetooth.le.ScanSettings;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -88,9 +92,33 @@ public class MainActivity extends Activity {
         mHandler = new Handler();
         mBLEService = new BLEService();
 
-        BackThread thread = new BackThread();
-        thread.setDaemon(true);
-        thread.start();
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            int permissionResult = checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION);
+
+            if(permissionResult != PackageManager.PERMISSION_GRANTED) {
+                if(shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_COARSE_LOCATION)) {
+                    AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
+                    dialog.setTitle("Need Permission").setMessage("This Function need Permission \"COARSE LOCATION\". Continue?")
+                            .setPositiveButton("Yes",new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                        requestPermissions(new String[] {Manifest.permission.ACCESS_COARSE_LOCATION}, 1000);
+                                    }
+                                }
+                            }).setNegativeButton("No", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    Toast.makeText(MainActivity.this, "Cancel Function", Toast.LENGTH_SHORT).show();
+                        }
+                    }).create().show();
+                } else {
+                    requestPermissions(new String[] {Manifest.permission.ACCESS_COARSE_LOCATION}, 1000);
+                }
+            } else {
+            }
+        } else {
+        }
 
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
@@ -120,6 +148,10 @@ public class MainActivity extends Activity {
             return;
         }
 
+        BackThread thread = new BackThread();
+        thread.setDaemon(true);
+        thread.start();
+
         mDeviceName = (TextView) findViewById(R.id.deviceName);
         mDeviceAddress  = (TextView) findViewById(R.id.deviceAddress);
         mDeviceStatus = (TextView) findViewById(R.id.deviceStatus);
@@ -132,6 +164,21 @@ public class MainActivity extends Activity {
         mPosX = (TextView) findViewById(R.id.posX);
         mPosY = (TextView) findViewById(R.id.posY);
         mPosZ = (TextView) findViewById(R.id.posZ);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode) {
+            case 1000:
+                if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+                } else {
+
+                }
+                break;
+        }
     }
 
     @Override
@@ -232,7 +279,7 @@ public class MainActivity extends Activity {
 
     private void scanBLEDevice(final boolean enable) {
 
-        settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).build();
+        settings = new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_BALANCED).build();
         filters = new ArrayList<ScanFilter>();
         ScanFilter filter = new ScanFilter.Builder().setDeviceAddress(DEFAULT_BLE_ADDRESS).build();
         filters.add(filter);
@@ -277,6 +324,8 @@ public class MainActivity extends Activity {
 
         @Override
         public void onScanFailed(int errorCode) {
+            Toast.makeText(MainActivity.this, String.valueOf(errorCode), Toast.LENGTH_SHORT).show();
+            invalidateOptionsMenu();
         }
 
         private void processResult(final ScanResult result) {
@@ -381,9 +430,9 @@ public class MainActivity extends Activity {
                 mGenuino.setPotision(px, py, pz);
                 displayData(mGenuino.getGyroscope().getData());
                 displayData(mGenuino.getAccelerometer().getData());
-                mPosX.setText(String.valueOf(mGenuino.getPositionX()));
-                mPosY.setText(String.valueOf(mGenuino.getPositionY()));
-                mPosZ.setText(String.valueOf(mGenuino.getPositionZ()));
+                mPosX.setText(String.format("%.2f",mGenuino.getPositionX()));
+                mPosY.setText(String.format("%.2f",mGenuino.getPositionY()));
+                mPosZ.setText(String.format("%.2f",mGenuino.getPositionZ()));
             }
         }
     };
