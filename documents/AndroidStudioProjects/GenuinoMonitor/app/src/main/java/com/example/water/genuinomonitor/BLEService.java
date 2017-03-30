@@ -67,6 +67,12 @@ public class BLEService extends Service {
             "com.example.bluetooth.le.POS_Y_DATA";
     public final static String POS_Z_DATA =
             "com.example.bluetooth.le.POS_Z_DATA";
+    public final static String SPEED_X_DATA =
+            "com.example.bluetooth.le.SPEED_X_DATA";
+    public final static String SPEED_Y_DATA =
+            "com.example.bluetooth.le.SPEED_Y_DATA";
+    public final static String SPEED_Z_DATA =
+            "com.example.bluetooth.le.SPEED_Z_DATA";
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
 
@@ -88,6 +94,12 @@ public class BLEService extends Service {
             UUID.fromString(gattAttributes.POS_Y_CALCULATION);
     public final static UUID UUID_POS_Z_CALCULATION =
             UUID.fromString(gattAttributes.POS_Z_CALCULATION);
+    public final static UUID UUID_SPEED_X_CALCULATION =
+            UUID.fromString(gattAttributes.SPEED_X_CALCULATION);
+    public final static UUID UUID_SPEED_Y_CALCULATION =
+            UUID.fromString(gattAttributes.SPEED_Y_CALCULATION);
+    public final static UUID UUID_SPEED_Z_CALCULATION =
+            UUID.fromString(gattAttributes.SPEED_Z_CALCULATION);
 
     public class LocalBinder extends Binder {
         BLEService getService() {
@@ -284,6 +296,15 @@ public class BLEService extends Service {
         }
         else if(UUID_POS_Z_CALCULATION.equals(characteristic.getUuid())) {
             intent.putExtra(POS_Z_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if (UUID_SPEED_X_CALCULATION.equals(characteristic.getUuid())) {
+            intent.putExtra(SPEED_X_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if(UUID_SPEED_Y_CALCULATION.equals(characteristic.getUuid())) {
+            intent.putExtra(SPEED_Y_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
+        }
+        else if(UUID_SPEED_Z_CALCULATION.equals(characteristic.getUuid())) {
+            intent.putExtra(SPEED_Z_DATA, String.valueOf(changeFloatByteOrder(characteristic.getValue(),ByteOrder.LITTLE_ENDIAN)));
         }
         else {
             // For all other profiles, writes the data formatted in HEX.

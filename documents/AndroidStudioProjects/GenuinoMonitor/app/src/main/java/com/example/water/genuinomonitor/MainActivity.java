@@ -52,6 +52,9 @@ public class MainActivity extends Activity {
     private BluetoothGattCharacteristic mPosXCharacteristic;
     private BluetoothGattCharacteristic mPosYCharacteristic;
     private BluetoothGattCharacteristic mPosZCharacteristic;
+    private BluetoothGattCharacteristic mSpeedXCharacteristic;
+    private BluetoothGattCharacteristic mSpeedYCharacteristic;
+    private BluetoothGattCharacteristic mSpeedZCharacteristic;
     private ScanSettings settings;
     private List<ScanFilter> filters;
     private Genuino101 mGenuino;
@@ -71,6 +74,9 @@ public class MainActivity extends Activity {
     private TextView mPosX;
     private TextView mPosY;
     private TextView mPosZ;
+    private TextView mSpeedX;
+    private TextView mSpeedY;
+    private TextView mSpeedZ;
 
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
@@ -164,6 +170,9 @@ public class MainActivity extends Activity {
         mPosX = (TextView) findViewById(R.id.posX);
         mPosY = (TextView) findViewById(R.id.posY);
         mPosZ = (TextView) findViewById(R.id.posZ);
+        mSpeedX = (TextView) findViewById(R.id.speedX);
+        mSpeedY = (TextView) findViewById(R.id.speedY);
+        mSpeedZ = (TextView) findViewById(R.id.speedZ);
     }
 
     @Override
@@ -385,8 +394,8 @@ public class MainActivity extends Activity {
                 clearUI();
                 invalidateOptionsMenu();
             } else if (BLEService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-                // Select Gyro services and characteristics on the user interface.
-                selectGyroGattServices(mBLEService.getSupportedGattServices());
+                // Select Genuino services and characteristics on the user interface.
+                selectGenuinoGattServices(mBLEService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 float gx = mGenuino.getGyroscope().getGx();
                 float gy = mGenuino.getGyroscope().getGy();
@@ -397,6 +406,9 @@ public class MainActivity extends Activity {
                 float px = mGenuino.getPositionX();
                 float py = mGenuino.getPositionY();
                 float pz = mGenuino.getPositionZ();
+                float vx = mGenuino.getSpeedX();
+                float vy = mGenuino.getSpeedY();
+                float vz = mGenuino.getSpeedZ();
 
                 if(intent.getStringExtra(BLEService.GYRO_X_DATA) != null) {
                     gx = Float.parseFloat(intent.getStringExtra(BLEService.GYRO_X_DATA));
@@ -425,14 +437,27 @@ public class MainActivity extends Activity {
                 if(intent.getStringExtra(BLEService.POS_Z_DATA) != null) {
                     pz = Float.parseFloat(intent.getStringExtra(BLEService.POS_Z_DATA));
                 }
+                if(intent.getStringExtra(BLEService.SPEED_X_DATA) != null) {
+                    vx = Float.parseFloat(intent.getStringExtra(BLEService.SPEED_X_DATA));
+                }
+                if(intent.getStringExtra(BLEService.SPEED_Y_DATA) != null) {
+                    vy = Float.parseFloat(intent.getStringExtra(BLEService.SPEED_Y_DATA));
+                }
+                if(intent.getStringExtra(BLEService.SPEED_Z_DATA) != null) {
+                    vz = Float.parseFloat(intent.getStringExtra(BLEService.SPEED_Z_DATA));
+                }
                 mGenuino.getGyroscope().updateData(gx, gy, gz);
                 mGenuino.getAccelerometer().updateData(ax, ay, az);
                 mGenuino.setPotision(px, py, pz);
+                mGenuino.setSpeed(vx, vy, vz);
                 displayData(mGenuino.getGyroscope().getData());
                 displayData(mGenuino.getAccelerometer().getData());
                 mPosX.setText(String.format("%.2f",mGenuino.getPositionX()));
                 mPosY.setText(String.format("%.2f",mGenuino.getPositionY()));
                 mPosZ.setText(String.format("%.2f",mGenuino.getPositionZ()));
+                mSpeedX.setText(String.format("%.2f",mGenuino.getSpeedX()));
+                mSpeedY.setText(String.format("%.2f",mGenuino.getSpeedY()));
+                mSpeedZ.setText(String.format("%.2f",mGenuino.getSpeedZ()));
             }
         }
     };
@@ -458,7 +483,7 @@ public class MainActivity extends Activity {
     // Demonstrates how to iterate through the supported GATT Services/Characteristics.
     // In this sample, we populate the data structure that is bound to the ExpandableListView
     // on the UI.
-    private void selectGyroGattServices(List<BluetoothGattService> gattServices) {
+    private void selectGenuinoGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
         String uuid = null;
         String unknownServiceString = getResources().getString(R.string.ble_unknown_service);
@@ -512,6 +537,15 @@ public class MainActivity extends Activity {
                 else if(uuid.equals(BLEService.UUID_POS_Z_CALCULATION.toString())) {
                     mPosZCharacteristic = gattCharacteristic;
                 }
+                else if(uuid.equals(BLEService.UUID_SPEED_X_CALCULATION.toString())) {
+                    mSpeedXCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_SPEED_Y_CALCULATION.toString())) {
+                    mSpeedYCharacteristic = gattCharacteristic;
+                }
+                else if(uuid.equals(BLEService.UUID_SPEED_Z_CALCULATION.toString())) {
+                    mSpeedZCharacteristic = gattCharacteristic;
+                }
                 currentCharaData.put(LIST_NAME, gattAttributes.lookup(uuid, unknownCharaString));
                 currentCharaData.put(LIST_UUID, uuid);
                 gattCharacteristicGroupData.add(currentCharaData);
@@ -555,6 +589,9 @@ public class MainActivity extends Activity {
                 updateData(mPosXCharacteristic);
                 updateData(mPosYCharacteristic);
                 updateData(mPosZCharacteristic);
+                updateData(mSpeedXCharacteristic);
+                updateData(mSpeedYCharacteristic);
+                updateData(mSpeedZCharacteristic);
             }
         }
 
